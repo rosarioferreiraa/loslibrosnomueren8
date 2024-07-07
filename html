@@ -1,0 +1,444 @@
+
+<html lang="es">
+
+<head>
+ 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Los libros no mueren - Tienda Online</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="text/javascript"> 
+    
+ const carrito = document.getElementById('carrito');
+    const productos = document.getElementById('lista-productos');
+    const listaproductos = document.querySelector('#lista-carrito tbody')
+    const vaciarCarritoBtn = document.querySelector('#vaciar-carrito');
+    const finalizarCarritoBtn = document.querySelector('#finalizar-compra');
+    const buscarProductoInput = document.getElementById('buscador');
+    const listaProductos = document.querySelectorAll('.card');
+
+    eventslisteners();
+
+    function eventslisteners() {
+        //atento a cuando se presiona agregar carrito
+        productos.addEventListener('click', comprarprod);
+
+        //eliminar prod en el carrito
+        carrito.addEventListener('click', eliminarprod);
+
+        //vaciar carrit de compras
+        vaciarCarritoBtn.addEventListener('click', vaciarcarrito);
+
+        //finalizar carrit de compras
+        finalizarCarritoBtn.addEventListener('click', finalizarcarrito);
+
+        //mostrar lista de productos en carrito de compra al cargar DOM-LS
+        document.addEventListener('DOMContentLoaded', leerLS);
+      buscarProductoInput.addEventListener('input', () => {
+            const textoBusqueda = buscarProductoInput.value.trim().toLowerCase();
+
+            listaProductos.forEach(producto => {
+                const nombreProducto = producto.querySelector('h4').textContent.toLowerCase();
+
+                if (nombreProducto.includes(textoBusqueda)) {
+                    producto.style.display = 'block'; // Mostrar el producto si coincide con la búsqueda
+                } else {
+                    producto.style.display = 'none'; // Ocultar el producto si no coincide con la búsqueda
+                }
+            });
+        });
+
+    }
+
+
+    function comprarprod(e) {
+        e.preventDefault();
+        //delegation para agregar carrito
+        if (e.target.classList.contains("agregar-carrito")) {
+            const prod = e.target.parentElement.parentElement;
+            //enviamos el prod seleccionado para tomar sus datos
+            leerDatosprod(prod);
+            var fin = document.getElementById('txtgracias');
+            fin.style.visibility = 'hidden';
+            var fin = document.querySelector('#vaciar-carrito');
+            fin.style.visibility = 'visible';
+            var fin = document.querySelector('#finalizar-compra');
+            fin.style.visibility = 'visible';
+            var fin = document.querySelector('#lista-carrito');
+            fin.style.visibility = 'visible';
+
+        }
+    }
+
+
+    //leer Datos del prod
+    function leerDatosprod(prod) {
+        const infoprod = {
+            imagen: prod.querySelector('img').src,
+            titulo: prod.querySelector('h4').textContent,
+            precio: prod.querySelector('.precio').textContent,
+            id: prod.querySelector('a').getAttribute('data-id')
+        }
+
+        insertarprod(infoprod);
+    }
+
+    // insertar prod en el carrito
+    function insertarprod(prod) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+        <td><img src="${prod.imagen}" width="100"></td>
+        <td>${prod.titulo}</td>
+        <td>${prod.precio}</td>
+        <td><a href="#" class="borrar-prod" data-id="${prod.id}">X</a></td>
+    `;
+        listaproductos.appendChild(row);
+        guardarprodLocalStorage(prod);
+
+    }
+
+    //eliminar prod del carrito en el DOM
+    function eliminarprod(e) {
+        e.preventDefault();
+
+        let prod, prodId;
+
+        if (e.target.classList.contains('borrar-prod')) {
+            e.target.parentElement.parentElement.remove();
+        }
+        prod = e.target.parentElement.parentElement;
+        prodId = prod.querySelector('a').getAttribute('data-id');
+        eliminarprodLS(prodId);
+    }
+
+    //vacias Carrito
+    function vaciarcarrito() {
+        //listaproductos.innerHTML = '';
+        while (listaproductos.firstChild) {
+            listaproductos.removeChild(listaproductos.firstChild);
+        }
+        //vaciar carrito  de LS
+        vaciarLs();
+
+        return false;
+    }
+
+    //finalizar Carrito
+    function finalizarcarrito() {
+        //listaproductos.innerHTML = '';
+        while (listaproductos.firstChild) {
+            listaproductos.removeChild(listaproductos.firstChild);
+        }
+        //vaciar carrito  de LS
+        vaciarLs();
+        var fin = document.getElementById('txtgracias');
+        fin.style.visibility = 'visible';
+        var fin = document.querySelector('#vaciar-carrito');
+        fin.style.visibility = 'hidden';
+        var fin = document.querySelector('#finalizar-compra');
+        fin.style.visibility = 'hidden';
+        var fin = document.querySelector('#lista-carrito');
+        fin.style.visibility = 'hidden';
+        return false;
+    }
+
+    //almacenar prod al LS
+    function guardarprodLocalStorage(prod) {
+        let productos;
+        productos = obtenerproductosLocalStorage();
+        //El prod seleccionado se agrega al Array
+        productos.push(prod);
+        localStorage.setItem('productos', JSON.stringify(productos));
+    }
+
+
+    //comprobar que hayan elementos en el LS
+    function obtenerproductosLocalStorage() {
+        let productosLS;
+        //comprobamos si no hay naad o es nulo, creamos el array vacío
+        if (localStorage.getItem('productos') === null) {
+            productosLS = [];
+        } else {
+            productosLS = JSON.parse(localStorage.getItem('productos'));
+        }
+        return productosLS;
+    }
+
+    //pinta los productos desde LS en el carrito
+    function leerLS() {
+        let productosLS;
+
+        productosLS = obtenerproductosLocalStorage();
+
+        productosLS.forEach(function (prod) {
+            //Construimos el template
+            const row = document.createElement("tr");
+            row.innerHTML = `
+        <td><img src="${prod.imagen}" width="100"></td>
+        <td>${prod.titulo}</td>
+        <td>${prod.precio}</td>
+        <td><a href="#" class="borrar-prod" data-id="${prod.id}">X</a></td>
+    `;
+            listaproductos.appendChild(row);
+
+        })
+    }
+
+    //eliminar prod del LS
+    function eliminarprodLS(prod) {
+        let productosLS;
+        //obtnemos el arreglo con los productos
+        productosLS = obtenerproductosLocalStorage();
+        //iteramo para buscar coincidencias y eliminar
+        productosLS.forEach(function (prodLS, index) {
+            if (prodLS.id === prod) {
+                productosLS.splice(index, 1);
+            }
+        });
+
+        localStorage.setItem('productos', JSON.stringify(productosLS));
+
+    }
+
+    //eliminar todos los productos del LS
+    function vaciarLs() {
+        localStorage.clear();
+    }
+
+</script>
+
+  
+</head>
+
+<body>
+    <header>
+        <a><img src="https://matelab.ar/logomarca.jpg" width="100" alt="Logo de la marca" style="vertical-align:middle;" /></a>
+
+        <ol>
+            <li>Home</li>
+            <li><a href="#Productos">Productos </a></li>
+            <li><a href="#Contacto">Contacto </a></li>
+            <li class="submenu">
+                <img src="https://cdn-icons-png.flaticon.com/512/3144/3144456.png" width="30" id="img-carrito" />
+                <div id="carrito">
+
+                    <table id="lista-carrito" class="u-full-width">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <br />
+                    <a href="#" id="vaciar-carrito" class="button u-full-width">Vaciar Carrito</a>
+                    <a href="#" id="finalizar-compra" class="button u-full-width">Comprar</a>
+                </div>
+            </li>
+        </ol>
+
+
+
+    </header>
+
+    <main>
+
+        <section id="home">
+            <h1 id="txtgracias" style="visibility:hidden; text-align:center; color:red;">MUCHAS GRACIAS POR TU COMPRA!</h1><br />
+            <h2>Sobre Nosotros</h2>
+            <br />
+            <p>¡Bienvenidos a nuestra página online! <strong>Los libros no mueren</strong> fue creado por un grupo de personas interesadas en vender libros usados. De esta manera, evitamos que se impriman más papeles, y logramos que muchas personas ahorren dinero. Además, promovemos la lectura y ofrecemos una gran variedad de generos para todas las edades y gustos.</p>
+
+            <p>Explora nuestra colección y encuentra los mejores libros, novelas, cuentos infantiles y material escolar!</p>
+            <br />
+            <div class="columna2">
+                <img src="https://irp-cdn.multiscreensite.com/17abb920/MOBILE/jpg/315080-20150713_2058177ba6.jpg?v=7.3.45002" alt="imagen del local" height="150" />
+                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhh-vnVWbg-8bk9jCk1GmbKegftqm4j6u3Rf-9zPOwG-qrTazUjEs8DsQlXgikOH-mcFvS4Si3iOi8mTzFMH1X7nPWq3AHqmoehSRR0VH12MUycihIkESt9i4NzUKq6OEuwSe7zObtmSwFz/s1600/literatura-2240342w620.jpg" alt="imagen de libros" height="150" />
+            </div>
+
+        </section>
+        <br />
+        <section id="Productos">
+            <div id="lista-productos">
+                <h2>Productos</h2>
+                <div style="text-align:center;"> <br /><input id="buscador" style="align-text:center;" /></div>
+
+                <div class="row">
+                    <h3>Novelas</h3>
+                 <div class="card">
+                        <h4>El cuento de la criada</h4>
+                        <div class="info-card">
+                            <img src="https://m.media-amazon.com/images/I/81Uhr1VRKiL._AC_UF894,1000_QL80_.jpg" alt="portada del libro el cuento de la criada" style="max-height:100px;" />
+                            <br />
+                            <h5>
+                                El cuento de la criada es una novela escrita por la autora canadiense Margaret Atwood en 1985.
+                            </h5>
+                            <p class="precio">$15.000</p>
+                            <a class="button agregar-carrito" href="#" data-id="1"> Comprar</a>
+                        </div>
+                    </div>
+                 <div class="card">
+                        <h4>Los ojos del perro siberiano</h4>
+                        <div class="info-card">
+                            <img src="https://covers.alibrate.com/b/59e1275e27c36459bb7aee96/f901fdaf-8135-4b26-8a76-b43a3c7382ac/medium" alt="portada del libro los ojos del perro siberiano" style="max-height:100px;" />
+                            <br />
+                            <h5>
+                                Los ojos del perro siberiano es una novela juvenil escrita por el autor argentino Antonio Santa Ana en 1998.
+                            </h5>
+                            <p class="precio">$8.000</p>
+                            <a class="button agregar-carrito" href="#" data-id="2"> Comprar</a>
+                        </div>
+                    </div>
+                 <div class="card">
+                        <h4>El niño de pijama a rayas</h4>
+                        <div class="info-card">
+                            <img src="https://www.penguinlibros.com/ar/1601457/el-nino-con-el-pijama-de-rayas.jpg" alt="portada de El niño de pijama a rayas" style="max-height:100px;" />
+                            <br />
+                            <h5>
+                                El niño con el pijama de rayas es una novela de ficción dramática publicada en 2006 por el autor irlandés John Boyne.
+                            </h5>
+                            <p class="precio">$10.000</p>
+                            <a class="button agregar-carrito" href="#" data-id="3"> Comprar</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <h3>Cuentos infantiles</h3>
+                    <div class="card">
+                        <h4>Caperucita Roja</h4>
+                        <div class="info-card">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvrRVyf1SEXQazFx8tYCbfM6EaCMQyMAyejw&s" alt="portada del libro caperucita roja" style="max-height:100px;" />
+                            <br />
+                            <h5>
+                                Cuento Infactil Caperucita Roja Edición La Estación.
+                            </h5>
+                            <p class="precio">$5.000</p>
+                            <a class="button agregar-carrito" href="#" data-id="4"> Comprar</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>El zorro y la cigueña</h4>
+                        <div class="info-card">
+
+                            <img src="https://www.ekare.com/ekare/wp-content/uploads/2022/02/Lemniscates_Carme_El_Zorro_y_la-Ciguena_Esopo_Ekare-220x220.jpg" alt="portada del libro el zorro y la cigueña" style="max-height:100px;" />
+
+                            <br />
+                            <h5>
+                                Cuento el zorro y la cigueña, edición "Fábulas Esopo"
+                            </h5>
+                            <p class="precio">$7.000</p>
+                            <a class="button agregar-carrito" href="" data-id="5">Comprar</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>El Principito</h4>
+                        <div class="info-card">
+
+                            <img src="https://www.penguinlibros.com/ar/2184289/el-principito.jpg" alt="portada del libro el principito" style="max-height:100px;" />
+
+                            <br />
+                            <h5>
+                                Libro El principito, escrito por Antoine de Saint-Exupéry.
+                            </h5>
+                            <p class="precio">
+                                $12.550
+                            </p>
+                            <a class="button agregar-carrito" href="" data-id="6">Comprar</a>
+                        </div>
+                    </div>
+                    <br />
+
+
+                </div>
+
+                <br />
+                <div class="row">
+                    <h3>Libros escolares</h3>
+                    <div class="card">
+                        <div class="info-card">
+
+                            <h4>Gold Experience B1</h4>
+                            <img src="https://images.cdn1.buscalibre.com/fit-in/360x360/7d/b8/7db858eddd8a41198537c91daeb940b4.jpg" alt="portada del libro el cuento de la criada" style="max-height:100px;" />
+                            <br />
+                            <h5>
+                                Libro de Pearson Gold Experience B2
+                            </h5>
+                            <p class="precio">
+                                $17.380
+                            </p>
+                            <a class="button agregar-carrito" href="" data-id="7"> Comprar</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>Libro Lengua y Literatura</h4>
+                        <div class="info-card">
+
+                            <img src="https://http2.mlstatic.com/D_NQ_NP_694597-MLA40721674972_022020-O.webp" alt="portada del libro Lengua y Literatura" style="max-height:100px;" />
+
+                            <br />
+                            <h5>
+                                Libro Lengua y Literaura, estación Mandioca.
+                            </h5>
+                            <p class="precio">
+                                $6.000
+                            </p>
+                            <a class="button agregar-carrito" href="" data-id="8">Comprar</a>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>Libro Matemática</h4>
+                        <div class="info-card">
+
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8QY0DIylWOIVQNVRhODU6bn7Wg8JsqCFyjQ&s" alt="portada libro matemática" style="max-height:100px;" />
+
+                            <br />
+                            <h5>
+                                Libro cuadernillo matemática 4.
+                            </h5>
+                            <p class="precio">
+                                $14.000
+                            </p>
+                            <a class="button agregar-carrito" href="" data-id="9">Comprar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </section>
+        <br />
+        <section id="Carrito">
+            <div class="container">
+                <div class="row">
+
+                </div>
+            </div>
+        </section>
+        <br />
+        <section id="Contacto" style="width:100%;">
+            <div class="=row">
+                <h3>Consultas</h3>
+            </div>
+
+            <div class="formulario">
+                <label>Nombre</label>
+                <input id="nombre" type="text" />
+                <label for="email">Email</label>
+                <input id="email" type="text" />
+                <label for="consulta">Consulta</label>
+                <textarea id="consulta" rows="3" cols="30" type="text"></textarea>
+                <a class="button" href=""> Enviar</a>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
+
+
+
